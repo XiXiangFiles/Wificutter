@@ -118,9 +118,6 @@ class packetARP:public infoHost{
 				ethernet2[31+i]=0x00;
 			}
 			memcpy(ethernet2+36,targetIP,4);
-			
-
-
 			device.sll_family=AF_PACKET;
 			device.sll_ifindex=if_nametoindex(interface);
 			memcpy (device.sll_addr, getMac(), 6 * sizeof (uint8_t));
@@ -131,7 +128,11 @@ class packetARP:public infoHost{
 		
 		}
 		uint8_t *sendARPreq(){
-			
+			int bytes;
+			if ((bytes = sendto (send, ethernet2,sizeof(ethernet2), 0, (struct sockaddr *) &device, sizeof (device))) <= 0) {
+			       	perror ("sendto() failed");
+			        exit (EXIT_FAILURE);
+			 }
 
 			return 0;
 		}

@@ -84,16 +84,16 @@ class packetARP:public infoHost{
 	private:
 		struct sockaddr_ll device;
 
-		uint8_t ethernet2[1514];
+		uint8_t ethernet2[43];
 	public:
 		packetARP(char *interface,char *dstIP):infoHost(interface){
-			memset(ethernet2,0,1514);
+			memset(ethernet2,0,40);
 			char targetIP[4];
 			for(int i=0 ; i<6 ;i++){
 				ethernet2[i]=0xff;
 			}
 			memcpy(ethernet2+6,getMac(),6);
-			ethernet2[12]=0x80;
+			ethernet2[12]=0x08;
 			ethernet2[13]=0x06;
 		//==================================== Hardware type
 			ethernet2[14]=0x00;
@@ -106,18 +106,19 @@ class packetARP:public infoHost{
 		//==================================== protocol address length
 			ethernet2[19]=0x04;
 		//==================================== opcode
-			ethernet2[20]=0x01;
+			ethernet2[20]=0x00;
+			ethernet2[21]=0x01;
 		//==================================== sender mac addr + ip & target mac + ip
-			memcpy(ethernet2+20,getMac(),6);
-			memcpy(ethernet2+26,getIP(), 4);
+			memcpy(ethernet2+22,getMac(),6);
+			memcpy(ethernet2+28,getIP(), 4);
 			if(inet_pton(AF_INET,dstIP,targetIP)!=1){
 				perror("fail to convert ip");
 				exit(1);
 			}
 			for(int i=0;i<6;i++){
-				ethernet2[31+i]=0x00;
+				ethernet2[33+i]=0x00;
 			}
-			memcpy(ethernet2+36,targetIP,4);
+			memcpy(ethernet2+38,targetIP,4);
 			device.sll_family=AF_PACKET;
 			device.sll_ifindex=if_nametoindex(interface);
 			memcpy (device.sll_addr, getMac(), 6 * sizeof (uint8_t));
@@ -127,22 +128,24 @@ class packetARP:public infoHost{
 		~packetARP(){
 		
 		}
-		uint8_t *sendARPreq(){
+		void sendARPreq(){
 			int bytes;
 			if ((bytes = sendto (send, ethernet2,sizeof(ethernet2), 0, (struct sockaddr *) &device, sizeof (device))) <= 0) {
 			       	perror ("sendto() failed");
 			        exit (EXIT_FAILURE);
 			 }
-
-			return 0;
 		}
 	
 };
 
 int main(void ){
+	/*
 	infoHost h("wlan0");
 	h.getIP();
 	h.getIP6();
 	h.getMac();
+	*/
+	packetARP s("wlan0","192.168.4.227");
+	s.sendARPreq();
 	return 0;
 }

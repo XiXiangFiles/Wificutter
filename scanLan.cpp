@@ -83,8 +83,9 @@ class infoHost{
 class packetARP:public infoHost{
 	private:
 		struct sockaddr_ll device;
-
 		uint8_t ethernet2[43];
+		int receive;
+		uint8_t recvEther2[60];
 	public:
 		packetARP(char *interface,char *dstIP):infoHost(interface){
 			memset(ethernet2,0,40);
@@ -126,25 +127,39 @@ class packetARP:public infoHost{
 
 		}
 		~packetARP(){
-		
+			close(receive);
+			close(send);	
 		}
 		void sendARPreq(){
 			int bytes;
 			if ((bytes = sendto (send, ethernet2,sizeof(ethernet2), 0, (struct sockaddr *) &device, sizeof (device))) <= 0) {
 			       	perror ("sendto() failed");
-			        exit (EXIT_FAILURE);
+			        exit (1);
 			 }
+			recvARPreply();
+		}
+		void recvARPreply(){
+			struct sockaddr_ll from;
+			socklen_t fromlen=sizeof(from);
+			if((this->receive=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL)))<0)
+				perror("failed to creat recvSocket ");
+
+			if((recvfrom(this->receive,recvEther2,60,0,(struct sockaddr *)&from,&fromlen))<0)
+				perror("failed on recvfrom");
+	
+			printREPLY(recvEther2,55);	
+		}
+		void printREPLY(uint8_t *buffer,int size){
+			for(int i=0;i<size;i++){
+				printf("%x",buffer[i]);
+			}
+			printf("\n");
 		}
 	
 };
 
 int main(void ){
-	/*
-	infoHost h("wlan0");
-	h.getIP();
-	h.getIP6();
-	h.getMac();
-	*/
+
 	packetARP s("wlan0","192.168.4.227");
 	s.sendARPreq();
 	return 0;

@@ -87,6 +87,7 @@ class packetARP:public infoHost{
 		uint8_t ethernet2[43];
 		int receive;
 		uint8_t recvEther2[60];
+		char dstip[4];
 
 	public:
 		packetARP(char *interface,char *dstIP):infoHost(interface){
@@ -114,39 +115,50 @@ class packetARP:public infoHost{
 		//==================================== sender mac addr + ip & target mac + ip
 			memcpy(ethernet2+22,getMac(),6);
 			memcpy(ethernet2+28,getIP(), 4);
+			
 			if(inet_pton(AF_INET,dstIP,targetIP)!=1){
 				perror("fail to convert ip");
 				exit(1);
 			}
+
 			for(int i=0;i<6;i++){
 				ethernet2[33+i]=0x00;
 			}
+
 			memcpy(ethernet2+38,targetIP,4);
+			memcpy(this->dstip,targetIP,4);
+
 			device.sll_family=AF_PACKET;
 			device.sll_ifindex=if_nametoindex(interface);
 			memcpy (device.sll_addr, getMac(), 6 * sizeof (uint8_t));
 			device.sll_halen = htons (6);
 
 		}
+
 		~packetARP(){
 			close(receive);
 			close(send);	
 		}
+
 		void sendARPreq(){
 			int bytes;
 			if ((bytes = sendto (send, ethernet2,sizeof(ethernet2), 0, (struct sockaddr *) &device, sizeof (device))) <= 0) {
 			       	perror ("sendto() failed");
 			        exit (1);
 			 }
-			recvARPreply();
+			recvARPreply(this->dstip);
 		}
-		void recvARPreply(){
+
+		void recvARPreply(char *dstip){
+			
 			struct timeval start;
 			struct timeval end;
 			struct sockaddr_ll from;
 			unsigned long diff;
-			
-
+			char checkMac[6];
+			char checkIP[4];
+			char checkSrcIP[4];
+				
 			socklen_t fromlen=sizeof(from);
 			gettimeofday(&start,NULL);
 			if((this->receive=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL)))<0)
@@ -161,8 +173,16 @@ class packetARP:public infoHost{
 				memset(recvEther2,0,60);
 				if((recvfrom(this->receive,recvEther2,60,0,(struct sockaddr *)&from,&fromlen))<0)
 					perror("failed on recvfrom");
-					
-				printREPLY(recvEther2,55);	
+				
+				memcpy(checkSrcIP,recvEther2+28,4);
+				memcpy(checkMac,recvEther2+33,6);
+				memcpy(checkIP,recvEther2+38,4);
+				if(recvEther2[12]==0x08 && recvEther2[13]==0x06 && recvEther2[21]==0x02 && strcmp(checkSrcIP ,dstip)  ){
+					printREPLY(recvEther2,55);
+					printREPLY((uint8_t *)checkSrcIP,4);
+					printREPLY((uint8_t *)dstip,4);
+					break;	
+				}
 			}
 			
 		}
@@ -171,6 +191,7 @@ class packetARP:public infoHost{
 				printf("%x",buffer[i]);
 			}
 			printf("\n");
+		
 		}
 	
 };

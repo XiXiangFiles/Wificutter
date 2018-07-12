@@ -13,6 +13,7 @@
 #include<ifaddrs.h>
 #include<linux/if_packet.h>
 #include<sys/time.h>
+#include<string.h>
 
 class infoHost{
 	private:
@@ -127,7 +128,7 @@ class packetARP:public infoHost{
 
 			memcpy(ethernet2+38,targetIP,4);
 			memcpy(this->dstip,targetIP,4);
-
+		
 			device.sll_family=AF_PACKET;
 			device.sll_ifindex=if_nametoindex(interface);
 			memcpy (device.sll_addr, getMac(), 6 * sizeof (uint8_t));
@@ -179,8 +180,8 @@ class packetARP:public infoHost{
 				memcpy(checkIP,recvEther2+38,4);
 				if(recvEther2[12]==0x08 && recvEther2[13]==0x06 && recvEther2[21]==0x02 && strcmp(checkSrcIP ,dstip)  ){
 					printREPLY(recvEther2,55);
-					printREPLY((uint8_t *)checkSrcIP,4);
-					printREPLY((uint8_t *)dstip,4);
+				//	printREPLY((uint8_t *)checkSrcIP,4);
+				//	printREPLY((uint8_t *)dstip,4);
 					break;	
 				}
 			}
@@ -197,7 +198,34 @@ class packetARP:public infoHost{
 };
 
 int main(void ){
-	packetARP s("wlan0","192.168.4.227");
-	s.sendARPreq();
+	char local[15];
+	char local2[15];
+	infoHost h("wlan0");
+	inet_ntop(AF_INET,h.getIP(),local,INET_ADDRSTRLEN);
+	inet_ntop(AF_INET,h.getIP(),local2,INET_ADDRSTRLEN);
+//	printf("%s\n",local);
+	char *p;
+	char scanIP[15];
+	p=strtok(local,".");
+	int temp=0;
+	int countstr=0;
+	for(int i=0 ; i<4 ;i++){
+	//	printf("%s\n",p);
+		memcpy(scanIP+temp,p,strlen(p));
+		temp+=strlen(p);
+		if(i==3){
+			countstr=temp;
+		}
+		p=strtok(NULL,".");
+	}
+	memcpy(scanIP,local2,countstr);
+	for(int i=100;i<256;i++){
+		char str[3];
+		sprintf(str,"%d",i);
+		memcpy(scanIP+countstr,str,strlen(str));
+		packetARP s("wlan0",scanIP);
+		s.sendARPreq();
+
+	}
 	return 0;
 }

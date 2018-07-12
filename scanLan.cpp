@@ -12,6 +12,7 @@
 #include<net/ethernet.h>
 #include<ifaddrs.h>
 #include<linux/if_packet.h>
+#include<sys/time.h>
 
 class infoHost{
 	private:
@@ -86,6 +87,7 @@ class packetARP:public infoHost{
 		uint8_t ethernet2[43];
 		int receive;
 		uint8_t recvEther2[60];
+
 	public:
 		packetARP(char *interface,char *dstIP):infoHost(interface){
 			memset(ethernet2,0,40);
@@ -139,15 +141,30 @@ class packetARP:public infoHost{
 			recvARPreply();
 		}
 		void recvARPreply(){
+			struct timeval start;
+			struct timeval end;
 			struct sockaddr_ll from;
+			unsigned long diff;
+			
+
 			socklen_t fromlen=sizeof(from);
+			gettimeofday(&start,NULL);
 			if((this->receive=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL)))<0)
 				perror("failed to creat recvSocket ");
 
-			if((recvfrom(this->receive,recvEther2,60,0,(struct sockaddr *)&from,&fromlen))<0)
-				perror("failed on recvfrom");
-	
-			printREPLY(recvEther2,55);	
+			while(true){
+				gettimeofday(&end,NULL);
+				diff = (end.tv_sec-start.tv_sec)*1000000+ (end.tv_usec-start.tv_usec);
+				if(diff>1000000)
+					break;
+
+				memset(recvEther2,0,60);
+				if((recvfrom(this->receive,recvEther2,60,0,(struct sockaddr *)&from,&fromlen))<0)
+					perror("failed on recvfrom");
+					
+				printREPLY(recvEther2,55);	
+			}
+			
 		}
 		void printREPLY(uint8_t *buffer,int size){
 			for(int i=0;i<size;i++){
@@ -159,7 +176,6 @@ class packetARP:public infoHost{
 };
 
 int main(void ){
-
 	packetARP s("wlan0","192.168.4.227");
 	s.sendARPreq();
 	return 0;

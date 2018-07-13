@@ -14,6 +14,7 @@
 #include<linux/if_packet.h>
 #include<sys/time.h>
 #include<string.h>
+#include"Wang-C-C-lib-/socketlib/IOfile.cpp"
 
 class infoHost{
 	private:
@@ -168,7 +169,7 @@ class packetARP:public infoHost{
 			while(true){
 				gettimeofday(&end,NULL);
 				diff = (end.tv_sec-start.tv_sec)*1000000+ (end.tv_usec-start.tv_usec);
-				if(diff>1000000)
+				if(diff>100000)
 					break;
 
 				memset(recvEther2,0,60);
@@ -179,8 +180,28 @@ class packetARP:public infoHost{
 				memcpy(checkMac,recvEther2+33,6);
 				memcpy(checkIP,recvEther2+38,4);
 				if(recvEther2[12]==0x08 && recvEther2[13]==0x06 && recvEther2[21]==0x02 && strcmp(checkSrcIP ,dstip)  ){
-					printREPLY(recvEther2,55);
-				//	printREPLY((uint8_t *)checkSrcIP,4);
+					//printREPLY(recvEther2,55);
+					
+					char senderMac[6];
+					char senderIP[4];
+					char senderIPASC[INET_ADDRSTRLEN];
+					char senderMacASC[18];
+					char c=',';
+					memcpy(senderMac,recvEther2+22,6);
+					memcpy(senderIP,recvEther2+28,4);
+					inet_ntop(AF_INET,senderIP,senderIPASC,INET_ADDRSTRLEN);
+					memset(senderMacASC,0,18);	
+					for(int i=0;i<6;i++){
+						sprintf(senderMacASC+strlen(senderMacASC),"%x",senderMac[i]);
+					}
+					printf("%s\n",senderIPASC);
+					printf("%s\n",senderMacASC);
+				
+					IOfile f("scanLAN.txt");
+					f.filewrite(senderIPASC,strlen( senderIPASC),O_RDWR|O_APPEND );
+					f.filewrite((char *)c,1,O_RDWR|O_APPEND );
+					f.filewrite(senderMacASC,strlen(senderMacASC),O_RDWR|O_APPEND );
+				//	printREPLY((uint8_t *)senderMac,6);
 				//	printREPLY((uint8_t *)dstip,4);
 					break;	
 				}
@@ -200,17 +221,16 @@ class packetARP:public infoHost{
 int main(void ){
 	char local[15];
 	char local2[15];
+	char *p;
+	char scanIP[15];
+	int temp=0;
+	int countstr=0;
+
 	infoHost h("wlan0");
 	inet_ntop(AF_INET,h.getIP(),local,INET_ADDRSTRLEN);
 	inet_ntop(AF_INET,h.getIP(),local2,INET_ADDRSTRLEN);
-//	printf("%s\n",local);
-	char *p;
-	char scanIP[15];
 	p=strtok(local,".");
-	int temp=0;
-	int countstr=0;
-	for(int i=0 ; i<4 ;i++){
-	//	printf("%s\n",p);
+		for(int i=0 ; i<4 ;i++){
 		memcpy(scanIP+temp,p,strlen(p));
 		temp+=strlen(p);
 		if(i==3){
@@ -219,10 +239,9 @@ int main(void ){
 		p=strtok(NULL,".");
 	}
 	memcpy(scanIP,local2,countstr);
-	for(int i=100;i<256;i++){
+	for(int i=1;i<256;i++){
 		char str[3];
-		sprintf(str,"%d",i);
-		memcpy(scanIP+countstr,str,strlen(str));
+		sprintf(scanIP+countstr,"%d",i);
 		packetARP s("wlan0",scanIP);
 		s.sendARPreq();
 

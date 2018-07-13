@@ -161,6 +161,7 @@ class packetARP:public infoHost{
 			char checkIP[4];
 			char checkSrcIP[4];
 				
+			
 			socklen_t fromlen=sizeof(from);
 			gettimeofday(&start,NULL);
 			if((this->receive=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL)))<0)
@@ -186,7 +187,8 @@ class packetARP:public infoHost{
 					char senderIP[4];
 					char senderIPASC[INET_ADDRSTRLEN];
 					char senderMacASC[18];
-					char c=',';
+					char *c="\t";
+					char *e=";\n";
 					memcpy(senderMac,recvEther2+22,6);
 					memcpy(senderIP,recvEther2+28,4);
 					inet_ntop(AF_INET,senderIP,senderIPASC,INET_ADDRSTRLEN);
@@ -199,8 +201,10 @@ class packetARP:public infoHost{
 				
 					IOfile f("scanLAN.txt");
 					f.filewrite(senderIPASC,strlen( senderIPASC),O_RDWR|O_APPEND );
-					f.filewrite((char *)c,1,O_RDWR|O_APPEND );
+					f.filewrite(c,strlen(c),O_RDWR|O_APPEND );
 					f.filewrite(senderMacASC,strlen(senderMacASC),O_RDWR|O_APPEND );
+					f.filewrite(e,strlen(e),O_RDWR|O_APPEND );
+		
 				//	printREPLY((uint8_t *)senderMac,6);
 				//	printREPLY((uint8_t *)dstip,4);
 					break;	
@@ -242,6 +246,7 @@ int main(void ){
 	for(int i=1;i<256;i++){
 		char str[3];
 		sprintf(scanIP+countstr,"%d",i);
+		printf("send to %s \n",scanIP);
 		packetARP s("wlan0",scanIP);
 		s.sendARPreq();
 

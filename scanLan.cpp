@@ -195,6 +195,9 @@ class packetARP:public infoHost{
 					memset(senderMacASC,0,18);	
 					for(int i=0;i<6;i++){
 						sprintf(senderMacASC+strlen(senderMacASC),"%x",senderMac[i]);
+						if(i!=5){
+							senderMacASC[strlen(senderMacASC)]=':';
+						}
 					}
 					printf("%s\n",senderIPASC);
 					printf("%s\n",senderMacASC);
@@ -204,7 +207,6 @@ class packetARP:public infoHost{
 					f.filewrite(c,strlen(c),O_RDWR|O_APPEND );
 					f.filewrite(senderMacASC,strlen(senderMacASC),O_RDWR|O_APPEND );
 					f.filewrite(e,strlen(e),O_RDWR|O_APPEND );
-		
 				//	printREPLY((uint8_t *)senderMac,6);
 				//	printREPLY((uint8_t *)dstip,4);
 					break;	

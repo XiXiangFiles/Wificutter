@@ -16,9 +16,23 @@
 #include<string.h>
 #include"Wang-C-C-lib-/socketlib/IOfile.cpp"
 
-
+class arpreply{
+	private:
+		int send;
+	
+	public:
+		arpreply(char *dstMac, char *dstIP ,char *srcMac ,char srcIP){
+			
+		}
+	
+};
 
 int main(void ){
-	
+	IOfile f("scanLAN.txt");
+//	f.fileread();
+
+	//f.pre_order();	
+
+
 	return 0;
 }

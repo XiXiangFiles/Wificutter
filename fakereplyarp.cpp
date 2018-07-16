@@ -13,53 +13,106 @@
 #include<ifaddrs.h>
 #include<linux/if_packet.h>
 #include<sys/time.h>
-#include<string.h>
-#include"Wang-C-C-lib-/socketlib/IOfile.cpp"
+#include<time.h>
+#include"Wang-C-C-lib-/socketlib/hostInfo.cpp"
 
-class arpreply{
+class arpreply: public infoHost{
 	private:
-		uint8_t ethernet2[60];
 		int send;
 		char dstMAC[6];
 		char srcMAC[6];
 		char dstIP[4];
 		char srcIP[4];
+		char interface[10];
 
-		uint8_t *convertMac(char *macaddr){
-			uint8_t mac[6];
+		 char *convertMac(char *macaddr){
+			static char mac[6];
+			char str[16];
+			strcpy(str,macaddr);
+			char *p;
+			p=strtok(str, ":");
 			
+			for(int i=0;i<6;i++){
+				char c=std::stoi(p,0,16);
+				mac[i]=c;
+				p=strtok(NULL,":");
+			}
 			return mac;	
 		}
-		uint8_t randomMac(){
-			uint8_t mac[6];
+		char *randomMac(char *macaddr){
+			static char mac[6];
+			srand(time(NULL));
+			double min=0;
+			double max=255;
+			
+			for(int i=0 ; i<6 ; i++){
+				int x=(max-min)*rand()/(RAND_MAX + 1.0) + min;
+				mac[i]=htons(x);
+				printf("~~%x\n",htons(x));
+			}
 
+			
 			return mac;
 		}
+		
 	
 	public:
-		arpreply(char *dstMac, char *dstIP ,char *srcMac ,char *srcIP){
+		arpreply(char *interface,char *dstIP, char *dstMac ,char *srcIP ,char *srcMac):infoHost(interface){
+			
+					
+			strcpy(this->interface,interface);
 			if(send=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL))<0){
 				perror("failed to creat socket");
 				exit(1);
 			}
-			if(inet_pton(AF_INET,dstIP,this->dstIP)!=-1){
+			if(inet_pton(AF_INET,dstIP,this->dstIP)!=1){
 				perror("failed to convery dstIP");
 				exit(1);
 			}
-			if(inet_pton(AF_INET,srcIP,this->srcIP)!=-1){
+			if(inet_pton(AF_INET,srcIP,this->srcIP)!=1){
 				perror("failed to convert srcIP");
 				exit(1);
 			}
-
+		
+		//convertMac(dstMac);
+			for(int i=0;i<6;i++){
+				printf("--%x\n",convertMac(dstMac)[i]);
+			}
+		//	printf("%x\n",convertMac(dstMac));
 			memcpy(this->dstMAC,convertMac(dstMac),6);
-			memcpy(this->srcMAC,convertMac(srcMac),6);
+			memcpy(this->srcMAC,randomMac(srcMac),6);
+		}
+		~arpreply(){
+			close(send);
 		}
 		void sendreply(){
 				
+			uint8_t ethernet2[60];
+			struct sockaddr_ll device;	
+			
 			memcpy(ethernet2,this->dstMAC,6);
 			memcpy(ethernet2+6,this->srcMAC,6);
 			ethernet2[12]=0x08;
 			ethernet2[13]=0x06;
+			ethernet2[14]=0x00;
+			ethernet2[15]=0x01;
+			ethernet2[16]=0x08;
+			ethernet2[17]=0x00;
+			ethernet2[18]=0x06;
+			ethernet2[19]=0x04;
+			ethernet2[20]=0x00;
+			ethernet2[21]=0x02;
+	//----------------------------------------------------- faker sender
+			memcpy(ethernet2+22,srcMAC,6);
+			memcpy(ethernet2+28,srcIP,4);
+			memcpy(ethernet2+32,dstMAC,6);
+			memcpy(ethernet2+38,dstIP,4);
+					
+			device.sll_family=AF_PACKET;
+			device.sll_ifindex=if_nametoindex(interface);
+			memcpy(device.sll_addr,getMac(),6*sizeof(uint8_t));
+			device.sll_halen=htons(6);
+
 
 		}
 	
@@ -67,8 +120,14 @@ class arpreply{
 };
 
 int main(void ){
-	
+	char *senderIP="192.168.4.212";
+	char *senderMAC="b8:27:eb:39:b8:f";
+	char *routerIP="192.168.4.1";
+	char *routerMAC="c8:d3:a3:68:33:d2";
 
+	arpreply s("wlan0",senderIP,senderMAC,routerIP,routerMAC);
+	
+	
 
 	return 0;
 }

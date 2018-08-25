@@ -180,8 +180,7 @@ class packetARP:public infoHost{
 				memcpy(checkSrcIP,recvEther2+28,4);
 				memcpy(checkMac,recvEther2+33,6);
 				memcpy(checkIP,recvEther2+38,4);
-				if(recvEther2[12]==0x08 && recvEther2[13]==0x06 && recvEther2[21]==0x02 && strcmp(checkSrcIP ,dstip)  ){
-					//printREPLY(recvEther2,55);
+				if(strcmp(checkSrcIP ,dstip)&& recvEther2[12]==0x08 && recvEther2[13]==0x06 && recvEther2[21]==0x02 ){
 					
 					char senderMac[6];
 					char senderIP[4];
@@ -201,15 +200,8 @@ class packetARP:public infoHost{
 					}
 					printf("%s\n",senderIPASC);
 					printf("%s\n",senderMacASC);
-				
-					IOfile f("scanLAN.txt");
-					f.filewrite(senderIPASC,strlen( senderIPASC),O_RDWR|O_APPEND );
-					f.filewrite(c,strlen(c),O_RDWR|O_APPEND );
-					f.filewrite(senderMacASC,strlen(senderMacASC),O_RDWR|O_APPEND );
-					f.filewrite(e,strlen(e),O_RDWR|O_APPEND );
-				//	printREPLY((uint8_t *)senderMac,6);
-				//	printREPLY((uint8_t *)dstip,4);
-					break;	
+			
+					break;
 				}
 			}
 			
@@ -237,14 +229,16 @@ int main(void ){
 	inet_ntop(AF_INET,h.getIP(),local2,INET_ADDRSTRLEN);
 	p=strtok(local,".");
 		for(int i=0 ; i<4 ;i++){
-		memcpy(scanIP+temp,p,strlen(p));
 		temp+=strlen(p);
+		printf("strlen= %d\n", strlen(p));
 		if(i==3){
 			countstr=temp;
+			countstr+=2;
 		}
 		p=strtok(NULL,".");
 	}
 	memcpy(scanIP,local2,countstr);
+	
 	for(int i=1;i<256;i++){
 		char str[3];
 		sprintf(scanIP+countstr,"%d",i);

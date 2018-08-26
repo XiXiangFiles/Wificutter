@@ -14,7 +14,7 @@
 #include<linux/if_packet.h>
 #include<sys/time.h>
 #include<string.h>
-#include"Wang-C-C-lib-/socketlib/IOfile.cpp"
+#include<pthread.h>
 
 class infoHost{
 	private:
@@ -144,15 +144,23 @@ class packetARP:public infoHost{
 
 		void sendARPreq(){
 			int bytes;
+			char str[16];
+			int err;
+			pthread_t t1;
+
 			if ((bytes = sendto (send, ethernet2,sizeof(ethernet2), 0, (struct sockaddr *) &device, sizeof (device))) <= 0) {
 			       	perror ("sendto() failed");
 			        exit (1);
 			 }
-			recvARPreply(this->dstip);
+			strcpy(str,this->dstip);
+			err=pthread_create(&t1,NULL,recvARPreply,this);
+
+			//recvARPreply(this->dstip);
 		}
 
-		void recvARPreply(char *dstip){
-			
+		static void *recvARPreply(void *data){
+			char *dspip=(char *)data;
+
 			struct timeval start;
 			struct timeval end;
 			struct sockaddr_ll from;
@@ -170,7 +178,7 @@ class packetARP:public infoHost{
 			while(true){
 				gettimeofday(&end,NULL);
 				diff = (end.tv_sec-start.tv_sec)*1000000+ (end.tv_usec-start.tv_usec);
-				if(diff>100000)
+				if(diff>500000)
 					break;
 
 				memset(recvEther2,0,60);
@@ -215,7 +223,10 @@ class packetARP:public infoHost{
 		}
 	
 };
-
+void *test(void *c){
+	char *str=(char *)c;
+	printf("test\s\n",str);
+}
 int main(void ){
 	char local[15];
 	char local2[15];
@@ -223,6 +234,8 @@ int main(void ){
 	char scanIP[15];
 	int temp=0;
 	int countstr=0;
+	int err;
+	pthread_t t;
 
 	infoHost h("wlan0");
 	inet_ntop(AF_INET,h.getIP(),local,INET_ADDRSTRLEN);
@@ -231,12 +244,13 @@ int main(void ){
 		for(int i=0 ; i<4 ;i++){
 		temp+=strlen(p);
 		printf("strlen= %d\n", strlen(p));
-		if(i==3){
+		if(i==2){
 			countstr=temp;
-			countstr+=2;
+			countstr+=3;
 		}
 		p=strtok(NULL,".");
 	}
+		
 	memcpy(scanIP,local2,countstr);
 	
 	for(int i=1;i<256;i++){
@@ -245,7 +259,12 @@ int main(void ){
 		printf("send to %s \n",scanIP);
 		packetARP s("wlan0",scanIP);
 		s.sendARPreq();
-
+		/*
+		if(err=pthread_create(&t,NULL,test,(void * )scanIP)!= 0 ){
+			exit(10);
+		}
+		*/
 	}
+
 	return 0;
 }

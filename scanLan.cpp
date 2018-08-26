@@ -87,8 +87,6 @@ class packetARP:public infoHost{
 	private:
 		struct sockaddr_ll device;
 		uint8_t ethernet2[43];
-		int receive;
-		uint8_t recvEther2[60];
 		char dstip[4];
 
 	public:
@@ -138,82 +136,20 @@ class packetARP:public infoHost{
 		}
 
 		~packetARP(){
-			close(receive);
 			close(send);	
 		}
 
 		void sendARPreq(){
 			int bytes;
 			char str[16];
-			int err;
-			pthread_t t1;
 
 			if ((bytes = sendto (send, ethernet2,sizeof(ethernet2), 0, (struct sockaddr *) &device, sizeof (device))) <= 0) {
 			       	perror ("sendto() failed");
 			        exit (1);
 			 }
 			strcpy(str,this->dstip);
-			err=pthread_create(&t1,NULL,recvARPreply,this);
-
-			//recvARPreply(this->dstip);
 		}
 
-		static void *recvARPreply(void *data){
-			char *dspip=(char *)data;
-
-			struct timeval start;
-			struct timeval end;
-			struct sockaddr_ll from;
-			unsigned long diff;
-			char checkMac[6];
-			char checkIP[4];
-			char checkSrcIP[4];
-				
-			
-			socklen_t fromlen=sizeof(from);
-			gettimeofday(&start,NULL);
-			if((this->receive=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL)))<0)
-				perror("failed to creat recvSocket ");
-
-			while(true){
-				gettimeofday(&end,NULL);
-				diff = (end.tv_sec-start.tv_sec)*1000000+ (end.tv_usec-start.tv_usec);
-				if(diff>500000)
-					break;
-
-				memset(recvEther2,0,60);
-				if((recvfrom(this->receive,recvEther2,60,0,(struct sockaddr *)&from,&fromlen))<0)
-					perror("failed on recvfrom");
-				
-				memcpy(checkSrcIP,recvEther2+28,4);
-				memcpy(checkMac,recvEther2+33,6);
-				memcpy(checkIP,recvEther2+38,4);
-				if(strcmp(checkSrcIP ,dstip)&& recvEther2[12]==0x08 && recvEther2[13]==0x06 && recvEther2[21]==0x02 ){
-					
-					char senderMac[6];
-					char senderIP[4];
-					char senderIPASC[INET_ADDRSTRLEN];
-					char senderMacASC[18];
-					char *c="\t";
-					char *e=";\n";
-					memcpy(senderMac,recvEther2+22,6);
-					memcpy(senderIP,recvEther2+28,4);
-					inet_ntop(AF_INET,senderIP,senderIPASC,INET_ADDRSTRLEN);
-					memset(senderMacASC,0,18);	
-					for(int i=0;i<6;i++){
-						sprintf(senderMacASC+strlen(senderMacASC),"%x",senderMac[i]);
-						if(i!=5){
-							senderMacASC[strlen(senderMacASC)]=':';
-						}
-					}
-					printf("%s\n",senderIPASC);
-					printf("%s\n",senderMacASC);
-			
-					break;
-				}
-			}
-			
-		}
 		void printREPLY(uint8_t *buffer,int size){
 			for(int i=0;i<size;i++){
 				printf("%x",buffer[i]);
@@ -223,10 +159,69 @@ class packetARP:public infoHost{
 		}
 	
 };
-void *test(void *c){
-	char *str=(char *)c;
-	printf("test\s\n",str);
+static void *recvARPreply(void *data){
+	char *dstip=(char *)data;
+
+	struct timeval start;
+	struct timeval end;
+	struct sockaddr_ll from;
+	unsigned long diff;
+	char checkMac[6];
+	char checkIP[4];
+	char checkSrcIP[4];
+	int receive;				
+	uint8_t recvEther2[60];
+
+	socklen_t fromlen=sizeof(from);
+	gettimeofday(&start,NULL);
+	if((receive=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL)))<0)
+		perror("failed to creat recvSocket ");
+
+	while(true){
+		
+		gettimeofday(&end,NULL);
+		diff = (end.tv_sec-start.tv_sec)*1000000+ (end.tv_usec-start.tv_usec);
+		if(diff>500000){
+			printf("%s done \n",dstip);
+			break;
+		}
+
+	/*
+		memset(recvEther2,0,60);
+		if((recvfrom(receive,recvEther2,60,0,(struct sockaddr *)&from,&fromlen))<0)
+			perror("failed on recvfrom");
+				
+		memcpy(checkSrcIP,recvEther2+28,4);
+		memcpy(checkMac,recvEther2+33,6);
+		memcpy(checkIP,recvEther2+38,4);
+		if(strcmp(checkSrcIP ,dstip)&& recvEther2[12]==0x08 && recvEther2[13]==0x06 && recvEther2[21]==0x02 ){
+				
+			char senderMac[6];
+			char senderIP[4];
+			char senderIPASC[INET_ADDRSTRLEN];
+			recvEther2char senderMacASC[18];
+
+			char *c="\t";
+			char *e=";\n";
+			memcpy(senderMac,recvEther2+22,6);
+			memcpy(senderIP,recvEther2+28,4);
+			inet_ntop(AF_INET,senderIP,senderIPASC,INET_ADDRSTRLEN);
+			memset(senderMacASC,0,18);	
+			for(int i=0;i<6;i++){
+				sprintf(senderMacASC+strlen(senderMacASC),"%x",senderMac[i]);
+				if(i!=5){
+					senderMacASC[strlen(senderMacASC)]=':';
+				}
+			}
+			printf("%s\n",senderIPASC);
+			printf("%s\n",senderMacASC);
+			
+			break;
+		}
+		*/
+	}		
 }
+
 int main(void ){
 	char local[15];
 	char local2[15];
@@ -259,11 +254,11 @@ int main(void ){
 		printf("send to %s \n",scanIP);
 		packetARP s("wlan0",scanIP);
 		s.sendARPreq();
-		/*
-		if(err=pthread_create(&t,NULL,test,(void * )scanIP)!= 0 ){
-			exit(10);
+		
+		if(err=pthread_create(&t,NULL,recvARPreply,(void * )scanIP)!= 0 ){
+			perror("failed to create thread.");
 		}
-		*/
+		
 	}
 
 	return 0;

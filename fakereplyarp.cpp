@@ -14,7 +14,10 @@
 #include<linux/if_packet.h>
 #include<sys/time.h>
 #include<time.h>
+#include<fstream>
 #include"Wang-C-C-lib-/socketlib/hostInfo.cpp"
+
+using namespace std;
 
 class arpreply: public infoHost{
 	private:
@@ -121,14 +124,43 @@ class arpreply: public infoHost{
 };
 
 int main(void ){
+	
+	char *filename="ArpList.txt";
+	/*
 	char *senderIP="192.168.4.213";
 	char *senderMAC="b8:27:eb:39:b8:f";
 	char *routerIP="192.168.4.1";
 	char *routerMAC="c8:d3:a3:68:33:d2:";
+	*/
+	char routerIP[16];
+	char routerMac[18];
+	char dstIP[16];
+	char dstMac[18];
+	char ch;
 
-	arpreply s("wlan0",senderIP,senderMAC,routerIP,routerMAC);
+	ifstream fin;
+	fin.open(filename);
+	if(fin.is_open()){
+		while(fin.get(ch))
+			cout << ch;
+		fin.close();
+	}
+	printf("please input Router IP\n");
+	scanf("%s",&routerIP);
+	printf("please input Router mac\n");
+	scanf("%s",&routerMac);
+	printf("please input dstIP\n");
+	scanf("%s",&dstIP);
+	printf("please input dstMac\n");
+	scanf("%s",&dstMac);
+	
+
+	arpreply s("wlan0",dstIP,dstMac,routerIP,routerMac);
+	
 	for (int i=0;i<1000;i++){
+		printf("%d ",i);
 		s.sendreply();	
 	}
+
 	return 0;
 }

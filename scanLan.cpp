@@ -12,9 +12,11 @@
 #include<net/ethernet.h>
 #include<ifaddrs.h>
 #include<linux/if_packet.h>
-#include<sys/time.h>
 #include<string.h>
+#include<fstream>
 #include<pthread.h>
+
+using namespace std;
 
 class infoHost{
 	private:
@@ -161,9 +163,7 @@ class packetARP:public infoHost{
 };
 void *recvARPreply(void *data){
 	char *dstip=(char *)data;
-
-	struct timeval start;
-	struct timeval end;
+	
 	struct sockaddr_ll from;
 	unsigned long diff;
 	char checkMac[6];
@@ -171,19 +171,20 @@ void *recvARPreply(void *data){
 	char checkSrcIP[4];
 	int receive;				
 	uint8_t recvEther2[60];
-
+	
+	char *filename="ArpList.txt";
+	ofstream fout(filename,ios::out| ios::trunc);
+	
+	if(!fout.is_open()){
+		perror("failed to open the file");
+		pthread_exit(NULL);
+	}
+	
 	socklen_t fromlen=sizeof(from);
-	gettimeofday(&start,NULL);
 	if((receive=socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL)))<0)
 		perror("failed to creat recvSocket ");
 
 	while(true){
-		
-		gettimeofday(&end,NULL);
-		diff = (end.tv_sec-start.tv_sec)*1000000+ (end.tv_usec-start.tv_usec);
-		if(diff>500000){
-		}
-
 	
 		memset(recvEther2,0,60);
 		if((recvfrom(receive,recvEther2,60,0,(struct sockaddr *)&from,&fromlen))<0)
@@ -215,10 +216,12 @@ void *recvARPreply(void *data){
 			printf("%s\n",senderIPASC);
 			printf("%s\n",senderMacASC);
 			
+			fout << senderIPASC <<","<<senderMacASC<<"\n"; 
 		}
 		
 	}		
 	//printf("%s done \n",dstip);
+	fout.close();
 	close(receive);
 	//pthread_exit(NULL);
 }

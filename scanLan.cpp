@@ -159,7 +159,7 @@ class packetARP:public infoHost{
 		}
 	
 };
-static void *recvARPreply(void *data){
+void *recvARPreply(void *data){
 	char *dstip=(char *)data;
 
 	struct timeval start;
@@ -182,11 +182,9 @@ static void *recvARPreply(void *data){
 		gettimeofday(&end,NULL);
 		diff = (end.tv_sec-start.tv_sec)*1000000+ (end.tv_usec-start.tv_usec);
 		if(diff>500000){
-			printf("%s done \n",dstip);
-			break;
 		}
 
-	/*
+	
 		memset(recvEther2,0,60);
 		if((recvfrom(receive,recvEther2,60,0,(struct sockaddr *)&from,&fromlen))<0)
 			perror("failed on recvfrom");
@@ -194,12 +192,13 @@ static void *recvARPreply(void *data){
 		memcpy(checkSrcIP,recvEther2+28,4);
 		memcpy(checkMac,recvEther2+33,6);
 		memcpy(checkIP,recvEther2+38,4);
+		
 		if(strcmp(checkSrcIP ,dstip)&& recvEther2[12]==0x08 && recvEther2[13]==0x06 && recvEther2[21]==0x02 ){
 				
 			char senderMac[6];
 			char senderIP[4];
 			char senderIPASC[INET_ADDRSTRLEN];
-			recvEther2char senderMacASC[18];
+			char senderMacASC[18];
 
 			char *c="\t";
 			char *e=";\n";
@@ -216,10 +215,12 @@ static void *recvARPreply(void *data){
 			printf("%s\n",senderIPASC);
 			printf("%s\n",senderMacASC);
 			
-			break;
 		}
-		*/
+		
 	}		
+	//printf("%s done \n",dstip);
+	close(receive);
+	//pthread_exit(NULL);
 }
 
 int main(void ){
@@ -228,10 +229,10 @@ int main(void ){
 	char *p;
 	char scanIP[15];
 	int temp=0;
-	int countstr=0;
 	int err;
+	int countstr=0;
 	pthread_t t;
-
+	
 	infoHost h("wlan0");
 	inet_ntop(AF_INET,h.getIP(),local,INET_ADDRSTRLEN);
 	inet_ntop(AF_INET,h.getIP(),local2,INET_ADDRSTRLEN);
@@ -248,18 +249,23 @@ int main(void ){
 		
 	memcpy(scanIP,local2,countstr);
 	
+	if(err=pthread_create(&t,NULL,recvARPreply,(void * )scanIP)!= 0 )
+		perror("failed to create thread");
+
 	for(int i=1;i<256;i++){
 		char str[3];
+		void *res;
+		int err;
+
 		sprintf(scanIP+countstr,"%d",i);
-		printf("send to %s \n",scanIP);
+		//printf("send to %s \n",scanIP);
+		
 		packetARP s("wlan0",scanIP);
-		s.sendARPreq();
-		
-		if(err=pthread_create(&t,NULL,recvARPreply,(void * )scanIP)!= 0 ){
-			perror("failed to create thread.");
-		}
-		
+		s.sendARPreq();		
 	}
+
+	sleep(1);
+	pthread_cancel(t);
 
 	return 0;
 }

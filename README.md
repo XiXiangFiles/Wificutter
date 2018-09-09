@@ -7,9 +7,16 @@ The other file can use it to send cut package to router.
 g++ -lpthread scanLan.cpp -o out
 sudo ./out
 ````
+````c++
+infoHost h("wlan0");  // at line 239, you can modified the Network interface
+packetARP s("wlan0",scanIP); // at line 239, you can modified the Network interface
+````
 
 * fakereplyarp.cpp
 ````
 g++ fakereplyarp.cpp socketlib/HostInfo.cpp -o out
 sudo ./out
+````
+````c++
+arpreply s("wlan0",dstIP,dstMac,routerIP,routerMac);  // at line 151, you can modified the Network interface at first parameter.
 ````

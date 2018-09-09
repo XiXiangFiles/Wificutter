@@ -9,8 +9,8 @@ sudo ./out
 ````
 ***modify the code***    
 ````cpp
-infoHost h("wlan0");  // at line 239, you can modified the Network interface
-packetARP s("wlan0",scanIP); // at line 239, you can modified the Network interface
+infoHost h("wlan0");  // at line 239, you can modify the Network interface
+packetARP s("wlan0",scanIP); // at line 239, you can modify the Network interface
 ````
 
 * fakereplyarp.cpp
@@ -20,5 +20,5 @@ sudo ./out
 ````
 ***modify the code***      
 ```cpp
-arpreply s("wlan0",dstIP,dstMac,routerIP,routerMac);  // at line 151, you can modified the Network interface at first parameter.
+arpreply s("wlan0",dstIP,dstMac,routerIP,routerMac);  // at line 151, you can modify the Network interface at first parameter.
 ```

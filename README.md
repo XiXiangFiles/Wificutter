@@ -6,8 +6,10 @@ The other file can use it to send cut package to router.
 ````
 g++ -lpthread scanLan.cpp -o out
 sudo ./out
+````
 
 * fakereplyarp.cpp
 ````
 g++ fakereplyarp.cpp socketlib/HostInfo.cpp -o out
 sudo ./out
+````

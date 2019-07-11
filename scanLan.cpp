@@ -16,6 +16,7 @@
 #include<fstream>
 #include<pthread.h>
 
+
 using namespace std;
 
 class infoHost{
@@ -208,11 +209,12 @@ void *recvARPreply(void *data){
 			inet_ntop(AF_INET,senderIP,senderIPASC,INET_ADDRSTRLEN);
 			memset(senderMacASC,0,18);	
 			for(int i=0;i<6;i++){
-				sprintf(senderMacASC+strlen(senderMacASC),"%x",senderMac[i]);
+				sprintf(senderMacASC+strlen(senderMacASC),"%x",(u_int8_t)senderMac[i]);
 				if(i!=5){
 					senderMacASC[strlen(senderMacASC)]=':';
 				}
 			}
+			
 			printf("%s\n",senderIPASC);
 			printf("%s\n",senderMacASC);
 			
@@ -236,13 +238,13 @@ int main(void ){
 	int countstr=0;
 	pthread_t t;
 	
-	infoHost h("wlan0");
+	infoHost h("wlo1");
 	inet_ntop(AF_INET,h.getIP(),local,INET_ADDRSTRLEN);
 	inet_ntop(AF_INET,h.getIP(),local2,INET_ADDRSTRLEN);
 	p=strtok(local,".");
 		for(int i=0 ; i<4 ;i++){
 		temp+=strlen(p);
-		printf("strlen= %d\n", strlen(p));
+		//printf("strlen= %d\n", strlen(p));
 		if(i==2){
 			countstr=temp;
 			countstr+=3;
@@ -251,7 +253,6 @@ int main(void ){
 	}
 		
 	memcpy(scanIP,local2,countstr);
-	
 	if(err=pthread_create(&t,NULL,recvARPreply,(void * )scanIP)!= 0 )
 		perror("failed to create thread");
 
@@ -263,7 +264,7 @@ int main(void ){
 		sprintf(scanIP+countstr,"%d",i);
 		//printf("send to %s \n",scanIP);
 		
-		packetARP s("wlan0",scanIP);
+		packetARP s("wlo1",scanIP);
 		s.sendARPreq();		
 	}
 

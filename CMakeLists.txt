@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.10.0)
+project(wificutter)
+set(file_path, scanLan.cpp)
+find_package(Threads REQUIRED)
+add_executable(scan scanLan.cpp)
+add_executable(out fakereplyarp.cpp socketlib/HostInfo.cpp)
+target_link_libraries(scan Threads::Threads)

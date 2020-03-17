@@ -1,6 +1,6 @@
 # Wificutter
 There have two files in this project.The scanLan.cpp use to scan local LAN and it will save IP and Mac address in ArpList.txt.    
-The other file can use it to send cut package to router.    
+The other file can use it to crash the ARP table.    
 
 * Install
 ````shell

@@ -228,7 +228,18 @@ void *recvARPreply(void *data){
 	//pthread_exit(NULL);
 }
 
-int main(void ){
+int main(int argc, char* argv[]){
+	char *interface;
+	if (argc < 3) {
+		printf("Please input interface. ex: -I enp3s0");
+		return 0;
+	} else {
+		if (strcmp(argv[1], "-I")){
+			printf("unknown '%s' operator \n", argv[1]);
+			return 0;
+		}
+		interface =  argv[2];
+	}
 	char local[15];
 	char local2[15];
 	char *p;
@@ -238,7 +249,7 @@ int main(void ){
 	int countstr=0;
 	pthread_t t;
 	
-	infoHost h("wlo1");
+	infoHost h(interface);
 	inet_ntop(AF_INET,h.getIP(),local,INET_ADDRSTRLEN);
 	inet_ntop(AF_INET,h.getIP(),local2,INET_ADDRSTRLEN);
 	p=strtok(local,".");
@@ -264,7 +275,7 @@ int main(void ){
 		sprintf(scanIP+countstr,"%d",i);
 		//printf("send to %s \n",scanIP);
 		
-		packetARP s("wlo1",scanIP);
+		packetARP s(interface,scanIP);
 		s.sendARPreq();		
 	}
 

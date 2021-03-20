@@ -4,20 +4,16 @@ The other file can use it to crash the ARP table.
 
 * Install
 ````shell
-cmake . 
-make
+./compile.sh
 ````
 
-* ScanLan.cpp
-    * modify the code    
-````cpp
-infoHost h("wlan0");  // at line 239, you can modify the Network interface
-packetARP s("wlan0",scanIP); // at line 239, you can modify the Network interface
+* Run Scan
+````shell
+    sudo ./scan -I wlo1
 ````
 
-* fakereplyarp.cpp
-    * ***modify the code***      
-```cpp
-arpreply s("wlan0",dstIP,dstMac,routerIP,routerMac);  // at line 151, you can modify the Network interface at first parameter.
+* Run out
+```shell
+    sudo ./out -I wlo1 -dstIP 192.168.43.161  -dstMac 58:a0:23:a3:be:25 -fakeIP 192.168.43.160 -fakeMac 58:a0:23:a3:be:25 -N 100
 ```
 
